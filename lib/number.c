@@ -351,19 +351,19 @@ _bc_do_add (bc_num n1, bc_num n2, int scale_min)
   /* Start with the fraction part.  Initialize the pointers. */
   n1bytes = n1->n_scale;
   n2bytes = n2->n_scale;
-  n1ptr = (char *) (n1->n_value + n1->n_len + n1bytes - 1);
-  n2ptr = (char *) (n2->n_value + n2->n_len + n2bytes - 1);
-  sumptr = (char *) (sum->n_value + sum_scale + sum_digits - 1);
+  n1ptr = (char *) (n1->n_value + n1->n_len + n1bytes);
+  n2ptr = (char *) (n2->n_value + n2->n_len + n2bytes);
+  sumptr = (char *) (sum->n_value + sum_scale + sum_digits);
 
   /* Add the fraction part.  First copy the longer fraction.*/
   if (n1bytes != n2bytes)
     {
       if (n1bytes > n2bytes)
 	while (n1bytes>n2bytes)
-	  { *sumptr-- = *n1ptr--; n1bytes--;}
+	  { *--sumptr = *--n1ptr; n1bytes--;}
       else
 	while (n2bytes>n1bytes)
-	  { *sumptr-- = *n2ptr--; n2bytes--;}
+	  { *--sumptr = *--n2ptr; n2bytes--;}
     }
 
   /* Now add the remaining fraction part and equal size integer parts. */
@@ -372,7 +372,7 @@ _bc_do_add (bc_num n1, bc_num n2, int scale_min)
   carry = 0;
   while ((n1bytes > 0) && (n2bytes > 0))
     {
-      *sumptr = *n1ptr-- + *n2ptr-- + carry;
+      *--sumptr = *--n1ptr + *--n2ptr + carry;
       if (*sumptr > (BASE-1))
 	{
 	   carry = 1;
@@ -380,7 +380,6 @@ _bc_do_add (bc_num n1, bc_num n2, int scale_min)
 	}
       else
 	carry = 0;
-      sumptr--;
       n1bytes--;
       n2bytes--;
     }
@@ -390,7 +389,7 @@ _bc_do_add (bc_num n1, bc_num n2, int scale_min)
     { n1bytes = n2bytes; n1ptr = n2ptr; }
   while (n1bytes-- > 0)
     {
-      *sumptr = *n1ptr-- + carry;
+      *--sumptr = *--n1ptr + carry;
       if (*sumptr > (BASE-1))
 	{
 	   carry = 1;
@@ -398,12 +397,11 @@ _bc_do_add (bc_num n1, bc_num n2, int scale_min)
 	 }
       else
 	carry = 0;
-      sumptr--;
     }
 
   /* Set final carry. */
   if (carry == 1)
-    *sumptr += 1;
+    *--sumptr += 1;
 
   /* Adjust sum and return. */
   _bc_rm_leading_zeros (sum);
