@@ -5,8 +5,11 @@ dc/dc
 .tis-kernel/
 Makefile
 .deps/
+config.h
 config.log
 config.status
 texi-ver.incl
 stamp-h1
 __vfs-tis-*
+autom4te.cache
+bc/libmath.h
