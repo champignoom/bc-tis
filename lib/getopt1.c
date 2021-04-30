@@ -1,4 +1,4 @@
-/* getopt_long and getopt_long_only entry points for GNU getopt.
+/* getopt_long and getopt_long_only entry points for GNU getopt_bc.
 
    Copyright (C) 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1996,
    1997, 1998, 2003 Free Software Foundation, Inc.
@@ -167,7 +167,7 @@ main (int argc, char **argv)
 	  break;
 
 	default:
-	  printf ("?? getopt returned character code 0%o ??\n", c);
+	  printf ("?? getopt_bc returned character code 0%o ??\n", c);
 	}
     }
 

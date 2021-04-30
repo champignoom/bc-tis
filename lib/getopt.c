@@ -1,5 +1,5 @@
 /* Getopt for GNU.
-   NOTE: getopt is now part of the C library, so if you don't know what
+   NOTE: getopt_bc is now part of the C library, so if you don't know what
    "Keep this file name-space clean" means, talk to drepper@gnu.org
    before changing it!
 
@@ -23,7 +23,7 @@
    with this program; if not, write to the Free Software Foundation,
    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.  */
 
-/* This tells Alpha OSF/1 not to define a getopt prototype in <stdio.h>.
+/* This tells Alpha OSF/1 not to define a getopt_bc prototype in <stdio.h>.
    Ditto for AIX 3.2 and <stdlib.h>.  */
 #ifndef _NO_PROTO
 # define _NO_PROTO
@@ -58,7 +58,7 @@
    to get __GNU_LIBRARY__ defined.  */
 #ifdef	__GNU_LIBRARY__
 /* Don't include stdlib.h for non-GNU C libraries because some of them
-   contain conflicting prototypes for getopt.  */
+   contain conflicting prototypes for getopt_bc.  */
 # include <stdlib.h>
 # include <unistd.h>
 #endif	/* GNU C library.  */
@@ -89,11 +89,11 @@
 # define attribute_hidden
 #endif
 
-/* This version of `getopt' appears to the caller like standard Unix `getopt'
+/* This version of `getopt_bc' appears to the caller like standard Unix `getopt_bc'
    but it behaves differently for the user, since it allows the user
    to intersperse the options with the other arguments.
 
-   As `getopt' works, it permutes the elements of ARGV so that,
+   As `getopt_bc' works, it permutes the elements of ARGV so that,
    when it is done, all the options precede everything else.  Thus
    all application programs are extended to handle flexible argument order.
 
@@ -105,8 +105,8 @@
 
 #include "getopt.h"
 
-/* For communication from `getopt' to the caller.
-   When `getopt' finds an option that takes an argument,
+/* For communication from `getopt_bc' to the caller.
+   When `getopt_bc' finds an option that takes an argument,
    the argument value is returned here.
    Also, when `ordering' is RETURN_IN_ORDER,
    each non-option ARGV-element is returned here.  */
@@ -115,11 +115,11 @@ char *optarg;
 
 /* Index in ARGV of the next element to be scanned.
    This is used for communication to and from the caller
-   and for communication between successive calls to `getopt'.
+   and for communication between successive calls to `getopt_bc'.
 
-   On entry to `getopt', zero means this is the first call; initialize.
+   On entry to `getopt_bc', zero means this is the first call; initialize.
 
-   When `getopt' returns -1, this is the index of the first of the
+   When `getopt_bc' returns -1, this is the index of the first of the
    non-option elements that the caller should itself scan.
 
    Otherwise, `optind' communicates from one call to the next
@@ -128,8 +128,8 @@ char *optarg;
 /* 1003.2 says this must be 1 before any call.  */
 int optind = 1;
 
-/* Formerly, initialization of getopt depended on optind==0, which
-   causes problems with re-calling getopt as programs generally don't
+/* Formerly, initialization of getopt_bc depended on optind==0, which
+   causes problems with re-calling getopt_bc as programs generally don't
    know that. */
 
 int __getopt_initialized attribute_hidden;
@@ -150,7 +150,7 @@ int opterr = 1;
 
 /* Set to an option character which was unrecognized.
    This must be initialized on some systems to avoid linking in the
-   system's own getopt implementation.  */
+   system's own getopt_bc implementation.  */
 
 int optopt = '?';
 
@@ -181,7 +181,7 @@ int optopt = '?';
 
    The special argument `--' forces an end of option-scanning regardless
    of the value of `ordering'.  In the case of RETURN_IN_ORDER, only
-   `--' can cause `getopt' to return -1 with `optind' != ARGC.  */
+   `--' can cause `getopt_bc' to return -1 with `optind' != ARGC.  */
 
 static enum
 {
@@ -402,15 +402,15 @@ _getopt_initialize (int argc, char *const *argv, const char *optstring)
 
    If an element of ARGV starts with '-', and is not exactly "-" or "--",
    then it is an option element.  The characters of this element
-   (aside from the initial '-') are option characters.  If `getopt'
+   (aside from the initial '-') are option characters.  If `getopt_bc'
    is called repeatedly, it returns successively each of the option characters
    from each of the option elements.
 
-   If `getopt' finds another option character, it returns that character,
-   updating `optind' and `nextchar' so that the next call to `getopt' can
+   If `getopt_bc' finds another option character, it returns that character,
+   updating `optind' and `nextchar' so that the next call to `getopt_bc' can
    resume the scan with the following option character or ARGV-element.
 
-   If there are no more option characters, `getopt' returns -1.
+   If there are no more option characters, `getopt_bc' returns -1.
    Then `optind' is the index in ARGV of the first ARGV-element
    that is not an option.  (The ARGV-elements have been permuted
    so that those that are not options now come last.)
@@ -435,7 +435,7 @@ _getopt_initialize (int argc, char *const *argv, const char *optstring)
    or is an exact match for some defined option.  If they have an
    argument, it follows the option name in the same ARGV-element, separated
    from the option name by a `=', or else the in next ARGV-element.
-   When `getopt' finds a long-named option, it returns 0 if that option's
+   When `getopt_bc' finds a long-named option, it returns 0 if that option's
    `flag' field is nonzero, the value of the option's `val' field
    if the `flag' field is zero.
 
@@ -1132,7 +1132,7 @@ _getopt_internal (int argc, char *const *argv,
 }
 
 int
-getopt (int argc, char *const *argv, const char *optstring)
+getopt_bc (int argc, char *const *argv, const char *optstring)
 {
   return _getopt_internal (argc, argv, optstring,
 			   (const struct option *) 0,
@@ -1145,7 +1145,7 @@ getopt (int argc, char *const *argv, const char *optstring)
 #ifdef TEST
 
 /* Compile with -DTEST to make an executable for use in testing
-   the above definition of `getopt'.  */
+   the above definition of `getopt_bc'.  */
 
 int
 main (int argc, char **argv)
@@ -1157,7 +1157,7 @@ main (int argc, char **argv)
     {
       int this_option_optind = optind ? optind : 1;
 
-      c = getopt (argc, argv, "abc:d:0123456789");
+      c = getopt_bc (argc, argv, "abc:d:0123456789");
       if (c == -1)
 	break;
 
@@ -1195,7 +1195,7 @@ main (int argc, char **argv)
 	  break;
 
 	default:
-	  printf ("?? getopt returned character code 0%o ??\n", c);
+	  printf ("?? getopt_bc returned character code 0%o ??\n", c);
 	}
     }
 

@@ -560,7 +560,7 @@ dc_evalstr DC_DECLARG((string))
 			if (dc_register_get(peekc, &evalstr) != DC_SUCCESS)
 				break;
 			dc_push(evalstr);
-			/*@fallthrough@*/
+			/* fallthrough */
 		case DC_EVALTOS:
 			/*skip trailing whitespace to assist tail-recursion detection*/
 			while (s<end && (*s==' '||*s=='\t'||*s=='\n'||*s=='#')){
@@ -710,7 +710,7 @@ dc_evalfile DC_DECLARG((fp))
 			if (dc_register_get(c, &datum) != DC_SUCCESS)
 				break;
 			dc_push(datum);
-			/*@fallthrough@*/
+			/* fallthrough */
 		case DC_EVALTOS:
 			if (stdin_lookahead != peekc  &&  fp == stdin)
 				peekc = getc(fp);

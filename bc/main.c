@@ -84,7 +84,7 @@ parse_args (int argc, char **argv)
   int long_index;
   file_node *temp;
 
-  /* Force getopt to initialize.  Depends on GNU getopt. */
+  /* Force getopt_bc to initialize.  Depends on GNU getopt_bc. */
   optind = 0;
 
   /* Parse the command line */
