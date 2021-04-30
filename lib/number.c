@@ -439,9 +439,9 @@ _bc_do_sub (bc_num n1, bc_num n2, int scale_min)
     }
 
   /* Initialize the subtract. */
-  n1ptr = (char *) (n1->n_value + n1->n_len + n1->n_scale -1);
-  n2ptr = (char *) (n2->n_value + n2->n_len + n2->n_scale -1);
-  diffptr = (char *) (diff->n_value + diff_len + diff_scale -1);
+  n1ptr = (char *) (n1->n_value + n1->n_len + n1->n_scale);
+  n2ptr = (char *) (n2->n_value + n2->n_len + n2->n_scale);
+  diffptr = (char *) (diff->n_value + diff_len + diff_scale);
 
   /* Subtract the numbers. */
   borrow = 0;
@@ -451,14 +451,14 @@ _bc_do_sub (bc_num n1, bc_num n2, int scale_min)
     {
       /* n1 has the longer scale */
       for (count = n1->n_scale - min_scale; count > 0; count--)
-	*diffptr-- = *n1ptr--;
+	*--diffptr = *--n1ptr;
     }
   else
     {
       /* n2 has the longer scale */
       for (count = n2->n_scale - min_scale; count > 0; count--)
 	{
-	  val = - *n2ptr-- - borrow;
+	  val = - *--n2ptr - borrow;
 	  if (val < 0)
 	    {
 	      val += BASE;
@@ -466,7 +466,7 @@ _bc_do_sub (bc_num n1, bc_num n2, int scale_min)
 	    }
 	  else
 	    borrow = 0;
-	  *diffptr-- = val;
+	  *--diffptr = val;
 	}
     }
 
@@ -474,7 +474,7 @@ _bc_do_sub (bc_num n1, bc_num n2, int scale_min)
 
   for (count = 0; count < min_len + min_scale; count++)
     {
-      val = *n1ptr-- - *n2ptr-- - borrow;
+      val = *--n1ptr - *--n2ptr - borrow;
       if (val < 0)
 	{
 	  val += BASE;
@@ -482,7 +482,7 @@ _bc_do_sub (bc_num n1, bc_num n2, int scale_min)
 	}
       else
 	borrow = 0;
-      *diffptr-- = val;
+      *--diffptr = val;
     }
 
   /* If n1 has more digits then n2, we now do that subtract. */
@@ -490,7 +490,7 @@ _bc_do_sub (bc_num n1, bc_num n2, int scale_min)
     {
       for (count = diff_len - min_len; count > 0; count--)
 	{
-	  val = *n1ptr-- - borrow;
+	  val = *--n1ptr - borrow;
 	  if (val < 0)
 	    {
 	      val += BASE;
@@ -498,7 +498,7 @@ _bc_do_sub (bc_num n1, bc_num n2, int scale_min)
 	    }
 	  else
 	    borrow = 0;
-	  *diffptr-- = val;
+	  *--diffptr = val;
 	}
     }
 
@@ -645,22 +645,22 @@ _bc_simp_mul (bc_num n1, int n1len, bc_num n2, int n2len, bc_num *prod)
 
   *prod = bc_new_num (prodlen, 0);
 
-  n1end = (char *) (n1->n_value + n1len - 1);
-  n2end = (char *) (n2->n_value + n2len - 1);
-  pvptr = (char *) ((*prod)->n_value + prodlen - 1);
+  n1end = (char *) (n1->n_value + n1len);
+  n2end = (char *) (n2->n_value + n2len);
+  pvptr = (char *) ((*prod)->n_value + prodlen);
   sum = 0;
 
   /* Here is the loop... */
-  for (indx = 0; indx < prodlen-1; indx++)
+  for (indx = 1; indx < prodlen; indx++)
     {
-      n1ptr = (char *) (n1end - MAX(0, indx-n2len+1));
-      n2ptr = (char *) (n2end - MIN(indx, n2len-1));
-      while ((n1ptr >= n1->n_value) && (n2ptr <= n2end))
-	sum += *n1ptr-- * *n2ptr++;
-      *pvptr-- = sum % BASE;
+      n1ptr = (char *) (n1end - MAX(0, indx-n2len));
+      n2ptr = (char *) (n2end - MIN(indx, n2len));
+      while ((n1ptr > n1->n_value) && (n2ptr < n2end))
+	sum += *--n1ptr * *n2ptr++;
+      *--pvptr = sum % BASE;
       sum = sum / BASE;
     }
-  *pvptr = sum;
+  *--pvptr = sum;
 }
 
 
@@ -681,45 +681,43 @@ _bc_shift_addsub (bc_num accum, bc_num val, int shift, int sub)
   
   /* Set up pointers and others */
   accp = (signed char *)(accum->n_value +
-			 accum->n_len + accum->n_scale - shift - 1);
-  valp = (signed char *)(val->n_value + val->n_len - 1);
+			 accum->n_len + accum->n_scale - shift);
+  valp = (signed char *)(val->n_value + val->n_len);
   carry = 0;
 
   if (sub) {
     /* Subtraction, carry is really borrow. */
     while (count--) {
-      *accp -= *valp-- + carry;
+      *--accp -= *--valp + carry;
       if (*accp < 0) {
 	carry = 1;
-        *accp-- += BASE;
+        *accp += BASE;
       } else {
 	carry = 0;
-	accp--;
       }
     }
     while (carry) {
-      *accp -= carry;
+      *--accp -= carry;
       if (*accp < 0)
-	*accp-- += BASE;
+	*accp += BASE;
       else
 	carry = 0;
     }
   } else {
     /* Addition */
     while (count--) {
-      *accp += *valp-- + carry;
+      *--accp += *--valp + carry;
       if (*accp > (BASE-1)) {
 	carry = 1;
-        *accp-- -= BASE;
+        *accp -= BASE;
       } else {
 	carry = 0;
-	accp--;
       }
     }
     while (carry) {
-      *accp += carry;
+      *--accp += carry;
       if (*accp > (BASE-1))
-	*accp-- -= BASE;
+	*accp -= BASE;
       else
 	carry = 0;
     }
@@ -877,18 +875,18 @@ _one_mult (unsigned char *num, int size, int digit, unsigned char *result)
       else
 	{
 	  /* Initialize */
-	  nptr = (unsigned char *) (num+size-1);
-	  rptr = (unsigned char *) (result+size-1);
+	  nptr = (unsigned char *) (num+size);
+	  rptr = (unsigned char *) (result+size);
 	  carry = 0;
 
 	  while (size-- > 0)
 	    {
-	      value = *nptr-- * digit + carry;
-	      *rptr-- = value % BASE;
+	      value = *--nptr * digit + carry;
+	      *--rptr = value % BASE;
 	      carry = value / BASE;
 	    }
 
-	  if (carry != 0) *rptr = carry;
+	  if (carry != 0) *--rptr = carry;
 	}
     }
 }
@@ -933,8 +931,8 @@ bc_divide (bc_num n1, bc_num n2, bc_num *quot,  int scale)
   /* Set up the divide.  Move the decimal point on n1 by n2's scale.
      Remember, zeros on the end of num2 are wasted effort for dividing. */
   scale2 = n2->n_scale;
-  n2ptr = (unsigned char *) n2->n_value+n2->n_len+scale2-1;
-  while ((scale2 > 0) && (*n2ptr-- == 0)) scale2--;
+  n2ptr = (unsigned char *) n2->n_value+n2->n_len+scale2;
+  while ((scale2 > 0) && (*--n2ptr == 0)) scale2--;
 
   len1 = n1->n_len + scale2;
   scale1 = n1->n_scale - scale2;
@@ -1028,11 +1026,11 @@ bc_divide (bc_num n1, bc_num n2, bc_num *quot,  int scale)
 	    {
 	      *mval = 0;
 	      _one_mult (n2ptr, len2, qguess, mval+1);
-	      ptr1 = (unsigned char *) num1+qdig+len2;
-	      ptr2 = (unsigned char *) mval+len2;
+	      ptr1 = (unsigned char *) num1+qdig+len2+1;
+	      ptr2 = (unsigned char *) mval+len2+1;
 	      for (count = 0; count < len2+1; count++)
 		{
-		  val = (int) *ptr1 - (int) *ptr2-- - borrow;
+		  val = (int) *--ptr1 - (int) *--ptr2 - borrow;
 		  if (val < 0)
 		    {
 		      val += 10;
@@ -1040,7 +1038,7 @@ bc_divide (bc_num n1, bc_num n2, bc_num *quot,  int scale)
 		    }
 		  else
 		    borrow = 0;
-		  *ptr1-- = val;
+		  *ptr1 = val;
 		}
 	    }
 
@@ -1048,12 +1046,12 @@ bc_divide (bc_num n1, bc_num n2, bc_num *quot,  int scale)
 	  if (borrow == 1)
 	    {
 	      qguess--;
-	      ptr1 = (unsigned char *) num1+qdig+len2;
-	      ptr2 = (unsigned char *) n2ptr+len2-1;
+	      ptr1 = (unsigned char *) num1+qdig+len2+1;
+	      ptr2 = (unsigned char *) n2ptr+len2;
 	      carry = 0;
 	      for (count = 0; count < len2; count++)
 		{
-		  val = (int) *ptr1 + (int) *ptr2-- + carry;
+		  val = (int) *--ptr1 + (int) *--ptr2 + carry;
 		  if (val > 9)
 		    {
 		      val -= 10;
@@ -1061,9 +1059,9 @@ bc_divide (bc_num n1, bc_num n2, bc_num *quot,  int scale)
 		    }
 		  else
 		    carry = 0;
-		  *ptr1-- = val;
+		  *ptr1 = val;
 		}
-	      if (carry == 1) *ptr1 = (*ptr1 + 1) % 10;
+	      if (carry == 1) { --ptr1; *ptr1 = (*ptr1 + 1) % 10; }
 	    }
 
 	  /* We now know the quotient digit. */
