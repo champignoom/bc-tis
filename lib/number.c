@@ -920,7 +920,8 @@ bc_divide (bc_num n1, bc_num n2, bc_num *quot,  int scale)
 	{
 	  qval = bc_new_num (n1->n_len, scale);
 	  qval->n_sign = (n1->n_sign == n2->n_sign ? PLUS : MINUS);
-	  memset (&qval->n_value[n1->n_len],0,scale);
+	  if (scale > 0)
+		  memset (&qval->n_value[n1->n_len],0,scale);
 	  memcpy (qval->n_value, n1->n_value,
 		  n1->n_len + MIN(n1->n_scale,scale));
 	  bc_free_num (quot);
