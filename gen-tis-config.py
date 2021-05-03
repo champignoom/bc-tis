@@ -20,10 +20,10 @@ tis_config_template = {
 
 def main():
     config = []
-    for test_name in sys.argv:
+    for test_name in sys.argv[1:]:
         test_path = Path(test_name)
-        if test_path.suffix != '.b':
-            continue
+#        if test_path.suffix != '.b':
+#            continue
         config_obj = deepcopy(tis_config_template)
         config_obj["name"] = test_path.stem
         config_obj["filesystem"]["files"][0]["from"] = test_name
