@@ -1,7 +1,7 @@
-for (i=0; i<1000; i++) a = 2^i;
+for (i=0; i<10; i++) a = 2^i;
 length(a)
-for (i=3000; i<3100; i++) a = 3^i;
+for (i=3000; i<3010; i++) a = 3^i;
 length(a)
-for (i=200; i<220; i++) a = (4^100)^i;
+for (i=20; i<21; i++) a = (4^10)^i;
 length(a)
 quit

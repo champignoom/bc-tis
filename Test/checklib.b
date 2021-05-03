@@ -45,7 +45,7 @@ Percent failed: "; scale = 2; c*100/b;
    b, l and i are not reset.
 */
 
-if (b == 0) { b = 10; l = 61; i = 10; }
+if (b == 0) { b = 10; l = 31; i = 10; }
 
 "
 Checking e(x)"
@@ -55,7 +55,7 @@ define f(x) {
 for (s=10; s<l; s=s+i) {
 "
 scale = "; s
-j = t(0,200,1,s,s+4)
+j = t(0,2,1,s,s+4)
 }
 
 "
@@ -66,7 +66,7 @@ define f(x) {
 for (s=10; s<l; s=s+i) {
 "
 scale = "; s
-j = t(1,10000,25,s,s+4)
+j = t(1,10,25,s,s+4)
 }
 
 "
@@ -77,7 +77,7 @@ define f(x) {
 for (s=10; s<l; s=s+i) {
 "
 scale = "; s
-j = t(0,8*a(1),.01,s,s+4)
+j = t(0,8*a(1),.6,s,s+4)
 }
 
 "
@@ -88,7 +88,7 @@ define f(x) {
 for (s=10; s<l; s=s+i) {
 "
 scale = "; s
-j = t(-1000,1000,10,s,s+4)
+j = t(-10,10,10,s,s+4)
 }
 
 "
@@ -100,10 +100,10 @@ for (s=10; s<l; s=s+i) {
 "
 n=0, scale = "; s
 n=0
-j = t(0,30,.1,s,s+4)
+j = t(0,3,.6,s,s+4)
 "
 n=1, scale = "; s
 n=1
-j = t(0,30,.1,s,s+4)
+j = t(0,3,.6,s,s+4)
 }
 
