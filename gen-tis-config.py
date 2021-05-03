@@ -15,6 +15,7 @@ tis_config_template = {
                 ]
             },
         "val-args": " -l",
+        "no-results": True,
         "include": "tis-common.config"
         }
 
