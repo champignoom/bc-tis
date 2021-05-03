@@ -778,7 +778,7 @@ rt_error (mesg, va_alist)
 {
   va_list args;
 
-  fprintf (stderr, "Runtime error (func=%s, adr=%d): ",
+  fprintf (stderr, "Runtime error (func=%s, adr=%x): ",
 	   f_names[pc.pc_func], pc.pc_addr);
 #ifndef VARARGS   
   va_start (args, mesg);
