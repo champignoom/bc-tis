@@ -1,3 +1,3 @@
-for (a=0; a<180; a+=.4) x=e(a)
+for (a=0; a<18; a+=.9) x=e(a)
 x
 quit
