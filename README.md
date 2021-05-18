@@ -643,7 +643,7 @@ It is not specified unambiguously in the C standards whether this is an undefine
 
 The Out-of-memory errors are more of an unfortunate but inevitable cost of the analyzer itself than a problem of GNU Bc being analyzed.
 When following the loops, tis-analyzer records and tracks the values during each loop, so the memory usage could be amplifyed by tis-analyzer in proportion
-to the number of loops being executed <span style="font-size: small">(FIXME: is this correct?)</span>. The remedy here is to reduce the number of loops in the tests. We also add `"no-results": true` to the configuration file, which saves memory and reduces runtime.
+to the number of loops being executed <span style="color: red">(FIXME: is this correct?)</span>. The remedy here is to reduce the number of loops in the tests. We also add `"no-results": true` to the configuration file, which saves memory and reduces runtime.
 
 <details>
 <summary>Reduce the sizes of the tests</summary>
