@@ -13,6 +13,11 @@
     - [Analysis on the cloud with TrustInSoft CI](#analysis-on-the-cloud-with-trustinsoft-ci)
     - [Caveats under green lights](#caveats-under-green-lights)
   - [Fuzzing](#fuzzing)
+    - [Get and build the AFL fuzzer](#get-and-build-the-afl-fuzzer)
+    - [Rebuild GNU Bc with the fuzzer compiler](#rebuild-gnu-bc-with-the-fuzzer-compiler)
+    - [Fuzzing](#fuzzing-1)
+    - [Fix a fuzzed test](#fix-a-fuzzed-test)
+  - [Conclusion](#conclusion)
 
 ## Introduction
 
@@ -187,7 +192,7 @@ To inspect the undefined behavior, we rerun the analysis with option `-gui`:
 [TrustInSoft Analyzer] You can launch the GUI with:
      chromium-browser http://localhost:8080/
 ```
-Open http://localhost:8080/ in your browser and wait for a few seconds, you should see the graphical interface:
+Open http://localhost:8080/ in your browser and wait for a few seconds, we should see the graphical interface:
 
 ![tis-analyzer graphical interface](img/first-ub-gui.png)
 
@@ -238,42 +243,13 @@ Luckily, the code on the right panel is clear enough for us to expalin without f
 386      }
 ...
 ```
-<!--
-387 
-388   /* Now add carry the longer integer part. */
-389   if (n1bytes == 0)
-390     { n1bytes = n2bytes; n1ptr = n2ptr; }
-391   while (n1bytes-- > 0)
-392     {
-393       *sumptr = *n1ptr-- + carry;
-394       if (*sumptr > (BASE-1))
-395 	{
-396 	   carry = 1;
-397 	   *sumptr -= BASE;
-398 	 }
-399       else
-400 	carry = 0;
-401       sumptr--;
-402     }
-403 
-404   /* Set final carry. */
-405   if (carry == 1)
-406     *sumptr += 1;
-407 
-408   /* Adjust sum and return. */
-409   _bc_rm_leading_zeros (sum);
-410   return sum;
-411 }
-...
-```
--->
 
 From `n1ptr = (char *) (n1->n_value + n1->n_len + n1bytes - 1)` on line 354 and `n1ptr--` inside the loops, we can reasonably infer that `n1ptr` is being used as a loop pointer starting from the last element of an array and is decreased after each loop, and will of course end up being one before the first element of the array (hence the invalid `n1ptr-1`) once the loop ends.
 
-The canonical and simple fix here is to make the loop pointer start as a "one-past-the-end" pointer. Concretely, on the right panel, we remove the `- 1` from line 354 and change `n1ptr--` into `--n1ptr` on line 363 and 375.
-Before fixing the rest of similar errors, let's make sure that the current undefined behavior is gone. Save the file, click 'Parsing and then 'Value Analysis' in the top left panel, and we can see that the alarm has indeed moved from `n1ptr--` to the `n2ptr--` following it.
+The standard fix to this problem is to make the loop pointer start as a "one-past-the-end" pointer. Concretely, on the right panel, we remove the `- 1` from line 354 and change `n1ptr--` into `--n1ptr` on line 363 and 375m save the file, click 'Parsing and then 'Value Analysis' in the top left panel, and we can see that the alarm has indeed moved from `n1ptr--` to the `n2ptr--` following it.
 
 Now let's fix all such pointer errors in `lib/number.c:_bc_do_add`:
+
 ```diff
 354,356c354,356
 <   n1ptr = (char *) (n1->n_value + n1->n_len + n1bytes - 1);
@@ -320,34 +296,9 @@ Save the file, click 'Parsing' and 'Value Analysis' again, and we should see fro
 
 ### Configuration file
 
-To avoid typing all the command line arguments for each test, we can manage the tests with configuration files.
-First, we create a `tis-common.config`:
-```json
-{
-    "cpp-extra-args": "-Ibc -I. -Ih -DTIS_DETERMINISTIC_LIBC",
-    // the next two lines together are equivalent with "--interpreter" on the command line
-    "val": true,
-    "val-profile": "interpreter",
-    "files": [
-        "lib/tis-mock.c",
-        "lib/number.c",
-        "lib/vfprintf.c",
-        "lib/getopt.c",
-        "lib/getopt1.c",
-        "bc/global.c",
-        "bc/util.c",
-        "bc/execute.c",
-        "bc/bc.c",
-        "bc/scan.c",
-        "bc/load.c",
-        "bc/warranty.c",
-        "bc/main.c",
-        "bc/storage.c"
-    ]
-}
-```
+To avoid typing all the command line arguments for each test, we can manage the tests with a [configuration file](https://docs.ci.trust-in-soft.com/reference/configuration-file), named `tis.config`, which contains an array of json objects, each of which describe one test.
+Here we write a python script to generate the json array:
 
-Next, we create a python script `gen-tis-config.py` that generates configurations for all tests:
 ```python
 import json
 import sys
@@ -406,16 +357,48 @@ We should have a `tis.config` that looks like the following:
 ]
 ```
 
-Now we can run any test under `Test/` by its name. For example, to relaunch the test for `array.b` that we have just finished, we can simply run:
+
+The file `tis-common.config` contains common arguments for all tests:
+```json
+{
+    "cpp-extra-args": "-Ibc -I. -Ih -DTIS_DETERMINISTIC_LIBC",
+    // the next two lines together are equivalent with "--interpreter" on the command line
+    "val": true,
+    "val-profile": "interpreter",
+    "files": [
+        "lib/tis-mock.c",
+        "lib/number.c",
+        "lib/vfprintf.c",
+        "lib/getopt.c",
+        "lib/getopt1.c",
+        "bc/global.c",
+        "bc/util.c",
+        "bc/execute.c",
+        "bc/bc.c",
+        "bc/scan.c",
+        "bc/load.c",
+        "bc/warranty.c",
+        "bc/main.c",
+        "bc/storage.c"
+    ]
+}
+```
+
+Now we can run any test under `Test/` by specifying its name. For example, to relaunch the test for `array.b` demostrated above, we can run:
 ```shell-session
 ~/bc-1.07.1$ tis-analyzer -tis-config-load tis.config -tis-config-select-by-name array -gui
 ```
 
 ### Analysis on the cloud with TrustInSoft CI
 
-TrustInSoft has Continuous Integration (CI) support that allows code analysis on the cloud. To use it, we first create a public repository named `bc-tis` under github,
-then create a `.gitignore` with the following content:
+TrustInSoft ships with support for Continuous Integration (CI) that analyses github repositories remotely. To use it, we create an empty public repository named `bc-tis` on github, then initialize the local repository as follows:
+
 ```gitignore
+```
+and then initialize the local repository and push it to the remote:
+```shell-session
+~/bc-1.07.1$ git init
+~/bc-1.07.1$ cat >.gitignore <<EOF
 *.o
 *.a
 bc/bc
@@ -429,13 +412,10 @@ texi-ver.incl
 stamp-h1
 __vfs-tis-*
 autom4te.cache
-```
-and then initialize the local repository and push it to the remote:
-```shell-session
-~/bc-1.07.1$ git init
+EOF
 ~/bc-1.07.1$ git stage .gitignore
 ~/bc-1.07.1$ git stage *
-~/bc-1.07.1$ git commit -am 'init'
+~/bc-1.07.1$ git commit -m 'init'
 ~/bc-1.07.1$ git remote add origin 'git@github.com:your-user-name/bc-tis.git'
 ~/bc-1.07.1$ git push -u origin master
 ```
@@ -448,7 +428,8 @@ Wait for around ten minutes, we should see the results of all tests:
 ![First CI test](img/first-ci-test.png)
 
 By clicking 'Explore' on the right of `aryprm`, we have again the graphical interface of tis-analyzer showing the details of the found undefined behavior.
-This time, the error is still caused by postfix decrement of pointers, so we skip the inspection. Below is a fix of `lib/number.c` for all such errors:
+This time, the error is again caused by postfix decrement of pointers but in other functions, so we skip the inspection here.
+Below is a fix of `lib/number.c` for all such errors:
 ```diff
 444,446c444,446
 <   n1ptr = (char *) (n1->n_value + n1->n_len + n1->n_scale -1);
@@ -618,7 +599,7 @@ This time, the error is still caused by postfix decrement of pointers, so we ski
 
 
 ```shell-session
-~/bc-1.07.1$ git commit -am 'moref fix'
+~/bc-1.07.1$ git commit -am 'fix all invalid one-before pointer errors'
 ~/bc-1.07.1$ git push
 ```
 
@@ -628,25 +609,34 @@ Now half of the undefined behaviors should either disappear or become "Out of me
 
 ### Caveats under green lights
 
-It's weird that `ln` and `jn` finish instantely but simple operations like `mul` and `div` don't stop. Click messages of "ln" and we find the reason:
+After the brief excitement of seeing the green lights, we should notice that `ln` finish under one minutes, while much simpler operations like `mul` and `div` don't stop until they run out of memory. The reason can be found in the "Analyzer Log":
 ```
 ...
-module not found
+Runtime error (func=(main), adr=70): 
+Function l not defined.
 ...
 ```
-So the reason is that, due to missing libraries, `ln` and `jn` are not executed at all. According to `man bc`, we must add `-l` if we want to use the builtin library, so we add `"-val-args": " -l"` to `tis.config` and try again:
+which means that, due to missing libraries, the function `ln` is not executed at all, but such runtime error of bc is not detected by the analyzer of undefined behavior of C. To eliminate such false negatives, we follow the documentation of GNU Bc and add `"-val-args": " -l"` to `tis.config`, then try again:
 
 ![first-fix-ub-gui.png](img/first-fix-ub-gui.png)
 
 
 Now only 1 undefined behavior remains while all the rest become "Out of memory".
 
-The undefined behavior in the test `jn` appears in a statement that looks like `memset(arr + len, 0, 0)`, where `len` is the length of the array that `arr` points to.
+The undefined behavior in the test `jn` can be simplified into `memset(arr + len, 0, 0)`, where `len` is the length of the array that `arr` points to.
 `memset` implicitly requires the first argument to ’point to an object’, while `arr + len`, being a valid pointer, does not point to any element of the array.
-It is not specified unambiguously in the C standards whether this is an undefined behavior (see [remarks from Pascal Cuoq](https://musl.openwall.narkive.com/skiWxN6i/documentation-of-memcpy-and-undefined-behavior-in-memset) and [discussions on Stack Overflow](https://stackoverflow.com/questions/25390577/is-memcpya-1-b-1-0-defined-in-c11)).
+It is not specified unambiguously in the C standards whether this is an undefined behavior (see [remarks from Pascal Cuoq](https://musl.openwall.narkive.com/skiWxN6i/documentation-of-memcpy-and-undefined-behavior-in-memset) and [discussions on Stack Overflow](https://stackoverflow.com/questions/25390577/is-memcpya-1-b-1-0-defined-in-c11)). We fix it anyway to avoid risks:
 
-When following the loops, tis-analyzer records and tracks the values during each loop, therefore the memory usage could be amplifyed by tis-analyzer in proportion
-to the number of loops being executed. The remedy here is to reduce the number of loops in the tests. We also add `"no-results": true`, which saves memory and reduces runtime.
+```diff
+927c927
+< 	  memset (&qval->n_value[n1->n_len],0,scale);
+---
+> 	  if (scale > 0) memset (&qval->n_value[n1->n_len],0,scale);
+```
+
+The Out-of-memory errors are more of an unfortunate but inevitable cost of the analyzer itself than a problem of GNU Bc being analyzed.
+When following the loops, tis-analyzer records and tracks the values during each loop, so the memory usage could be amplifyed by tis-analyzer in proportion
+to the number of loops being executed <span style="font-size: small">(FIXME: is this correct?)</span>. The remedy here is to reduce the number of loops in the tests. We also add `"no-results": true` to the configuration file, which saves memory and reduces runtime.
 
 ```diff
 diff --git a/Test/atan.b b/Test/atan.b
@@ -889,59 +879,52 @@ index bd0eaad..caf5b3e 100644
 +for (a=1; a<50000; a+=10000) r=sqrt(a)
  r
  quit
-diff --git a/lib/number.c b/lib/number.c
-index a4dd5e2..10f4717 100644
---- a/lib/number.c
-+++ b/lib/number.c
-@@ -924,7 +924,7 @@ bc_divide (bc_num n1, bc_num n2, bc_num *quot,  int scale)
- 	{
- 	  qval = bc_new_num (n1->n_len, scale);
- 	  qval->n_sign = (n1->n_sign == n2->n_sign ? PLUS : MINUS);
--	  memset (&qval->n_value[n1->n_len],0,scale);
-+	  if (scale > 0) memset (&qval->n_value[n1->n_len],0,scale);
- 	  memcpy (qval->n_value, n1->n_value,
- 		  n1->n_len + MIN(n1->n_scale,scale));
- 	  bc_free_num (quot);
 ```
 
-Now most tests should pass.
+Now most tests should be passed.
 
 ![UB mostly gone](img/ub-mostly-gone.png)
 
 ## Fuzzing
 
 Fuzzing is a debugging technique that discovers crash triggering inputs by automatically monitoring and exhausting the executing paths of the program.
-We will fix one undefined behavior found with the help of the fuzzer.
+Here, we will fix one undefined behavior found with the help of the AFL fuzzer.
 
+### Get and build the AFL fuzzer
 ```shell-session
 ~$ wget https://github.com/google/AFL/archive/refs/tags/v2.57b.tar.gz
 ~$ tar -xf v2.57b.tar.gz
 ~$ cd AFL-2.57b
 ~/AFL-2.57b$ make
 ```
+### Rebuild GNU Bc with the fuzzer compiler
 
-Then we reconfigure and recompile bc:
 ```shell-session
-~$ cd bc-1.07.1
+~/AFL-2.57b$ cd ../bc-1.07.1
 ~/bc-1.07.1$ CC=$PWD/../AFL-2.57b/ ./configure
 ~/bc-1.07.1$ make
+```
+
+### Fuzzing
+```shell-session
 ~/bc-1.07.1$ mkdir afl-in
 ~/bc-1.07.1$ cp Test/*.b afl-in
 ~/bc-1.07.1$ afl-fuzz -i afl-in -o afl-out -- bc/bc @@
 ```
 
 If you receive the error below:
-> Hmm, your system is configured to send core dump notifications to an
-  external utility. This will cause issues: there will be an extended delay
-  between stumbling upon a crash and having this information relayed to the
-  fuzzer via the standard `waitpid()` API.
->
-> To avoid having crashes misinterpreted as timeouts, please log in as root
-  and temporarily modify `/proc/sys/kernel/core_pattern`, like so:
->
-> `echo core >/proc/sys/kernel/core_pattern`
 
-then follow the suggestion and relaunch the fuzzing
+    > Hmm, your system is configured to send core dump notifications to an
+    > external utility. This will cause issues: there will be an extended delay
+    > between stumbling upon a crash and having this information relayed to the
+    > fuzzer via the standard `waitpid()` API.
+    >
+    > To avoid having crashes misinterpreted as timeouts, please log in as root
+    > and temporarily modify `/proc/sys/kernel/core_pattern`, like so:
+    >
+    > `echo core >/proc/sys/kernel/core_pattern`
+
+then follow the suggestion and relaunch the fuzzing:
 
 ```shell-session
 ~/bc-1.07.1$ echo core |sudo tee /proc/sys/kernel/core_pattern
@@ -949,11 +932,11 @@ then follow the suggestion and relaunch the fuzzing
 ~/bc-1.07.1$ afl-fuzz -i afl-in -o afl-out -- bc/bc @@
 ```
 
-you should see
+We should see
 
 ![afl-fuzz](img/afl-fuzz.png)
 
-The most interesting outputs from the fuzzer are under `afl-out/crashes`, each of which is an input that triggers a crash in the program, which almost always implies an undefined behavior. Like before, we push the tests and the generated configuration to TrustInSoft CI.
+The most interesting outputs from the fuzzer are under `afl-out/crashes`, each of which is an input that triggers a crash in the program, which almost always comes from an undefined behavior. Like before, we push the tests and the generated configuration to TrustInSoft CI.
 
 ```shell-session
 ~/bc-1.07.1$ python3 ./gen-tis-config.py afl-out/crashes/* >tis.config
@@ -966,11 +949,13 @@ We can see that the fuzzer has indeed helped us find new undefined behaviors:
 
 ![Undefined behaviors found by the fuzzer](img/fuzz-ub.png)
 
-Click into the first one:
+### Fix a fuzzed test
+
+Click into the first test:
 
 ![First undefined behavior found by the fuzer](img/fuzz-ub-explore.png)
 
-It is usually difficult to debug out of context without knowing what the code intends to do, but thanks to the rich information recorded by tis-analyzer, we can collect the context information needed for debugging a specific bug. Right-click the second `params` inside the line `params = params->next` and click "Show Defs":
+It is usually difficult to debug without knowing what the code intends to do, but thanks to the rich information recorded by tis-analyzer, we can collect the context information needed for debugging a specific bug. Right-click the second `params` inside the line `params = params->next` and click "Show Defs":
 
 ![Tracing, step 1](img/fuzz-ub-debug1.png)
 
@@ -978,10 +963,19 @@ It means that the problematic `params` is a result of `params++`. By typing `par
 
 ![Tracing, step 1-1](img/fuzz-ub-debug1-1.png)
 
-This is in accordance with an implication of the alarm: when tis-analyzer says that the invalidity of `params->next` is the first trouble being found, it asserts implicitly at the same time that `params` is valid. There is only two cases where a member of a valid pointer could be invalid: the case where the member is inside a union, and the case where the pointer does not point to an object, that is, it points to the "one past the end" of an object or an array of objects. Since no union is involved here, only the latter case is relevant, and pointer arithmetics like `params++` are very likely the cause of it.
+This is in accordance with an implication of the alarm: when tis-analyzer says that the invalidity of `params->next` is the first trouble being found, it asserts implicitly at the same time that `params` is valid. There is only two cases where a member of a valid pointer could be invalid: the case where the member is inside a union, and the case where the pointer does not point to an object, that is, it points to the "one past the end" of an object or an array. Since no union is involved here, only the latter case is relevant, and pointer arithmetics like `params++` are indeed very likely the cause of it.
 
 Repeat the procedure: right-click the highlighted "params" and click "Show Defs":
 
 ![Tracing, step 2](img/fuzz-ub-debug2.png)
 
-We can see that the `params` is always a linked list and is never an array of any sort, so `params++` does not make sense at all, so we can replace it with `abort()`. Relaunch the analyzer and this undefined behavior should gone.
+We can see that the `params` is always a linked list and is never an array of any sort, so `params++` does not make sense at all. We can replace it with `abort()`. Relaunch the analyzer and this undefined behavior should gone.
+
+## Conclusion
+
+With the help of TrustInSoft analyzer, we found three undefined behaviors in the latest version of GNU Bc and fixed them all.
+This is a real-world proof of the analyzer's ability of finding bugs that have survived decades of tests from numerous users.
+Meanwhile, the proof is less than complete:
+1. To be adapted to the analyzer, the tests shipped with GNU Bc have to be drastically reduced in loop size.
+2. Testcase-based analyses are intrinsically incomplete. Fuzzer bridges completenss with feasibility, but at the end of the day, it provides no formal guarantee.
+3. The real power of TrustInSoft analyzer is abstract interpretation. Unfortunately, calculators do not behave well when interpreted abstractly, which is why we skipped the demonstration of the major component of the analyzer.
