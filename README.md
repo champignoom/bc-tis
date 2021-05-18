@@ -250,7 +250,7 @@ The standard fix to this problem is to make the loop pointer start as a "one-pas
 
 Now let's fix all such pointer errors in `lib/number.c:_bc_do_add`:
 
-<detail>
+<details>
 <summary>
 Fix of the first undefined behavior
 </summary>
@@ -293,7 +293,7 @@ Fix of the first undefined behavior
 ---
 >     *--sumptr += 1;
 ```
-</detail>
+</details>
 
 Save the file, click 'Parsing' and 'Value Analysis' again, and we should see from the upper left panel:
 > <span style="color:green">✓</span> There is no undefined behavior on this tested path.
@@ -437,7 +437,7 @@ By clicking 'Explore' on the right of `aryprm`, we have again the graphical inte
 This time, the error is again caused by postfix decrement of pointers but in other functions, so we skip the inspection here.
 Below is a fix of `lib/number.c` for all such errors:
 
-<detail>
+<details>
 <summary>Fix of all before-one pointer errors</summary>
 
 ```diff
@@ -606,7 +606,7 @@ Below is a fix of `lib/number.c` for all such errors:
 ---
 > 	      if (carry == 1) { --ptr1; *ptr1 = (*ptr1 + 1) % 10; }
 ```
-</detail>
+</details>
 
 ```shell-session
 ~/bc-1.07.1$ git commit -am 'fix all invalid one-before pointer errors'
@@ -648,7 +648,7 @@ The Out-of-memory errors are more of an unfortunate but inevitable cost of the a
 When following the loops, tis-analyzer records and tracks the values during each loop, so the memory usage could be amplifyed by tis-analyzer in proportion
 to the number of loops being executed <span style="font-size: small">(FIXME: is this correct?)</span>. The remedy here is to reduce the number of loops in the tests. We also add `"no-results": true` to the configuration file, which saves memory and reduces runtime.
 
-<detail>
+<details>
 <summary>Reduce the sizes of the tests</summary>
 
 ```diff
@@ -893,7 +893,7 @@ index bd0eaad..caf5b3e 100644
  r
  quit
 ```
-</detail>
+</details>
 
 Now most tests should be passed.
 
