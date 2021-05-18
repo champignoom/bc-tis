@@ -399,9 +399,6 @@ Now we can run any test under `Test/` by specifying its name. For example, to re
 
 TrustInSoft ships with support for Continuous Integration (CI) that analyses github repositories remotely. To use it, we create an empty public repository named `bc-tis` on github, then initialize the local repository as follows:
 
-```gitignore
-```
-and then initialize the local repository and push it to the remote:
 ```shell-session
 ~/bc-1.07.1$ git init
 ~/bc-1.07.1$ cat >.gitignore <<EOF
