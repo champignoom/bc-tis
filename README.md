@@ -1,9 +1,3 @@
-<style>
-summary {
-    list-style-type: kanada;
-}
-</style>
-
 # Code Analysis for GNU Bc using TrustInSoft Analyzer
 
 - [Code Analysis for GNU Bc using TrustInSoft Analyzer](#code-analysis-for-gnu-bc-using-trustinsoft-analyzer)
@@ -257,9 +251,7 @@ The standard fix to this problem is to make the loop pointer start as a "one-pas
 Now let's fix all such pointer errors in `lib/number.c:_bc_do_add`:
 
 <details>
-<summary>
-Fix of the first undefined behavior
-</summary>
+<summary>Click to toggle: fix of the first undefined behavior</summary>
 
 ```diff
 354,356c354,356
@@ -441,7 +433,7 @@ This time, the error is again caused by postfix decrement of pointers but in oth
 Below is a fix of `lib/number.c` for all such errors:
 
 <details>
-<summary>Fix of all before-one pointer errors</summary>
+<summary>Click to toggle: fix of all before-one pointer errors</summary>
 
 ```diff
 444,446c444,446
@@ -652,7 +644,7 @@ When following the loops, tis-analyzer records and tracks the values during each
 to the number of loops being executed <span style="color: red">(FIXME: is this correct?)</span>. The remedy here is to reduce the number of loops in the tests. We also add `"no-results": true` to the configuration file, which saves memory and reduces runtime.
 
 <details>
-<summary>Reduce the sizes of the tests</summary>
+<summary>Click to toggle: reduce the sizes of the tests</summary>
 
 ```diff
 diff --git a/Test/atan.b b/Test/atan.b
