@@ -1,3 +1,9 @@
+<style>
+summary {
+    list-style-type: kanada;
+}
+</style>
+
 # Code Analysis for GNU Bc using TrustInSoft Analyzer
 
 - [Code Analysis for GNU Bc using TrustInSoft Analyzer](#code-analysis-for-gnu-bc-using-trustinsoft-analyzer)
